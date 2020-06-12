@@ -22,6 +22,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    kotlinOptions{
+        jvmTarget = '1.8'
+    }
 }
 
 dependencies {
@@ -32,5 +35,10 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+
+    implementation "com.google.android.exoplayer:exoplayer:2.9.1"
+    implementation "com.arthurivanets.bottomsheet:bottomsheets-core:1.2.0"
+    implementation 'com.arthurivanets.bottomsheet:bottomsheets-sheets:1.2.0'
+    implementation 'com.arthurivanets.bottomsheet:bottomsheets-ktx:1.2.0'
 
 }

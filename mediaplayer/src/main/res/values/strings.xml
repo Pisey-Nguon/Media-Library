@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">StreamMedia</string>
+    <string name="link_media">https://milio-media.s3-ap-southeast-1.amazonaws.com/another-stream/1575271849439-649b8d93c8416bf0e0d269655b40b52f8987e918277699e973a265facc7862af.m3u8</string>
+    <string name="video_mp4">https://milio-media.sgp1.digitaloceanspaces.com/PRODUCTION/5d3426a931a5a26be90005ea/post/media/video/1586227362738-83257d6b050dcf85d01caefa8daa3f65c97c450d9b0502a5e3857f4075308363.mp4</string>
+    <string name="fit">FIT TO SCREEN</string>
+    <string name="crop">CROP</string>
+    <string name="stretch">STRETCH</string>
+    <string name="original">100%</string>
+</resources>
