@@ -70,11 +70,11 @@ class MediaActivity : AppCompatActivity(), View.OnClickListener , Player.EventLi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val toolbar = playerView.findViewById<Toolbar>(R.id.toolbar_controller)
-        setSupportActionBar(toolbar)
+//        val toolbar = playerView.findViewById<Toolbar>(R.id.toolbar_controller)
+//        setSupportActionBar(toolbar)
         requestFullScreenIfLandscape()
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_baseline_arrow_back_24)
+//        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+//        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_baseline_arrow_back_24)
 
         btnScale = playerView.findViewById(R.id.btn_scale)
         btnLock = playerView.findViewById(R.id.btn_lock)
@@ -114,14 +114,14 @@ class MediaActivity : AppCompatActivity(), View.OnClickListener , Player.EventLi
         btnUnlock.setOnClickListener {
             playerView.showController()
             controllerMedia.visibility = View.VISIBLE
-            toolbar.visibility = View.VISIBLE
+//            toolbar.visibility = View.VISIBLE
             btnUnlock.visibility = View.GONE
         }
         btnLock.setOnClickListener {
             playerView.hideController()
             btnUnlock.visibility = View.VISIBLE
             controllerMedia.visibility = View.GONE
-            toolbar.visibility = View.GONE
+//            toolbar.visibility = View.GONE
         }
         btnRotate.setOnClickListener {
             Log.d(TAG,"click")
