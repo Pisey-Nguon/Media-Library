@@ -91,16 +91,16 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
         Log.d(TAG, "datamediaThatget $getDataLink")
 
         btnScale=playerView.findViewById(R.id.btn_scale)
-        txtSeekTo = playerView.findViewById(R.id.txt_seekTo)
-        controllerMedia = playerView.findViewById(R.id.container_control_media)
-        containerController = playerView.findViewById(R.id.container_controller)
-        btnOption = playerView.findViewById(R.id.btn_option)
-        layoutReplay = playerView.findViewById(R.id.layout_replay)
-        layoutForward = playerView.findViewById(R.id.layout_forward)
+//        txtSeekTo = playerView.findViewById(R.id.txt_seekTo)
+//        controllerMedia = playerView.findViewById(R.id.container_control_media)
+//        containerController = playerView.findViewById(R.id.container_controller)
+//        btnOption = playerView.findViewById(R.id.btn_option)
+//        layoutReplay = playerView.findViewById(R.id.layout_replay)
+//        layoutForward = playerView.findViewById(R.id.layout_forward)
 //        playerView.controllerHideOnTouch = false
 //        playerView.controllerShowTimeoutMs = 1000
-        featureDoubleClick()
-        initComponentClick()
+//        featureDoubleClick()
+//        initComponentClick()
 
     }
 
