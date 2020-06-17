@@ -1,2 +1,3 @@
+include ':MediaView'
 include ':app'
 rootProject.name = "StreamMedia"

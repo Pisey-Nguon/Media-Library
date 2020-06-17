@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StreamMedia</string>
     <string name="link_media">https://milio-media.s3-ap-southeast-1.amazonaws.com/another-stream/1575271849439-649b8d93c8416bf0e0d269655b40b52f8987e918277699e973a265facc7862af.m3u8</string>
@@ -6,5 +7,5 @@
     <string name="crop">CROP</string>
     <string name="stretch">STRETCH</string>
     <string name="original">100%</string>
-    <string name="dataIntent">linkUrl</string>
+    <string name="dataIntent">link_media</string>
 </resources>

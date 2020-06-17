@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:id="@+id/container_media"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".MediaViewer">
 
     <com.google.android.exoplayer2.ui.SimpleExoPlayerView
         android:background="@color/colorBlack"
