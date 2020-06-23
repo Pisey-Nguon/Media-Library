@@ -5,7 +5,7 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:statusBarColor">@color/colorWhite</item>
     </style>
     <style name="BaseBottomSheetDialog" parent="@style/Theme.Design.Light.BottomSheetDialog">
         <item name="android:windowIsFloating">false</item>
@@ -21,4 +21,7 @@
         <item name="android:src">@drawable/layout_circle</item>
     </style>
     <drawable name="layout_circle">@drawable/circle_layout</drawable>
+    <style name="hideButtonMedia">
+        <item name="android:visibility">gone</item>
+    </style>
 </resources>

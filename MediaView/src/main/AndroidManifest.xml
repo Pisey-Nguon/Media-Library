@@ -1,7 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.sey.mediaview">
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <application>
+
         <activity
+            android:theme="@style/AppTheme"
             android:name=".MediaViewer"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|navigation"
             android:screenOrientation="fullSensor">
@@ -11,5 +15,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+
     </application>
 </manifest>

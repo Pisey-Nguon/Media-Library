@@ -1,13 +1,17 @@
 package com.sey.mediaview
 
+import android.app.Dialog
+import android.content.DialogInterface
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import kotlinx.android.synthetic.main.activity_main.*
+
 
 class ChooseQualityBottomSheet:BottomSheetDialogFragment() {
     companion object{
@@ -17,6 +21,7 @@ class ChooseQualityBottomSheet:BottomSheetDialogFragment() {
         }
     }
     val TAG = "ShareOptionDialog"
+    private var mainLayout:View?=null
     private lateinit var mCallback: callBackChooseQuality
     private lateinit var lv1080:LinearLayout
     private lateinit var lv720:LinearLayout
@@ -74,11 +79,20 @@ class ChooseQualityBottomSheet:BottomSheetDialogFragment() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        val bottomSheetBehavior = BottomSheetBehavior.from(mainLayout!!.parent as View)
+        bottomSheetBehavior!!.state = BottomSheetBehavior.STATE_EXPANDED
+
+    }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.layout_share_option_dialog, container, false)
+        mainLayout=inflater.inflate(R.layout.layout_set_resolution, container, false)
+        return mainLayout
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
         initViewComponent(view)
         componentFunction()
         visibleToCheck(indexVisibleCheck)
@@ -120,11 +134,22 @@ class ChooseQualityBottomSheet:BottomSheetDialogFragment() {
         }
     }
 
+
+    override fun onCancel(dialog: DialogInterface) {
+        super.onCancel(dialog)
+        mCallback.onDismiss()
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return super.onCreateDialog(savedInstanceState)
+    }
+
     interface callBackChooseQuality{
         fun callAuto()
         fun call1080()
         fun call720()
         fun call480()
         fun call360()
+        fun onDismiss()
     }
 }

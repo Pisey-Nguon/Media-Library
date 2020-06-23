@@ -1,18 +1,24 @@
 package com.sey.mediaview
 
+import android.content.Context
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
-import android.net.Uri
+import android.net.*
+import android.net.ConnectivityManager.NetworkCallback
+import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import androidx.fragment.app.FragmentManager
+import androidx.core.content.ContextCompat
 import com.arthurivanets.bottomsheets.BaseBottomSheet
 import com.arthurivanets.bottomsheets.ktx.showActionPickerBottomSheet
 import com.arthurivanets.bottomsheets.sheets.listeners.OnItemSelectedListener
@@ -28,14 +34,17 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelection
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
-import com.google.android.exoplayer2.ui.PlaybackControlView
+import com.google.android.exoplayer2.ui.DefaultTimeBar
+import com.google.android.exoplayer2.ui.TimeBar
 import com.google.android.exoplayer2.upstream.BandwidthMeter
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import com.google.android.exoplayer2.video.VideoListener
+import com.tubitv.ui.TubiLoadingView
 import kotlinx.android.synthetic.main.activity_main.*
+import java.lang.Exception
 
 class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListener {
     companion object {
@@ -43,6 +52,12 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
         private var getDataLink = ""
     }
 
+
+    private var playerState=false
+    private var connectivityNetwork=false
+    private var isClickTimeBar=false
+    private var isBuffering = false
+    private var isFullscreen = false
     private var isDoubleCliked = false
     private var handler: Handler = Handler()
 
@@ -60,16 +75,28 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
     private var bottomSheetChooseResolution: BaseBottomSheet? = null
     private var valueResolution: String = ""
     private var currentIndexResolution: Int = 0
-    private var indexAspectRatio:Int=0
+    private var currentIndexPlayBackSpeed: Int = 3
+    private var indexAspectRatio: Int = 0
+    private var mRatioAlreadyCalculated = false
+    private var mVideoWidthHeightRatio: Float = 0f
 
     private var player: SimpleExoPlayer? = null
     private var isPotrait = false
 
+    private var progressBar: TubiLoadingView? = null
+    private var btnPlay: ImageView? = null
+    private var btnPause: ImageView? = null
+    private var layoutBtnControllerPlay:LinearLayout?=null
     private var layoutReplay: LinearLayout? = null
     private var layoutForward: LinearLayout? = null
     private var containerController: LinearLayout? = null
+    private var timeBar:DefaultTimeBar?=null
     private var txtSeekTo: TextView? = null
-    private var btnScale:ImageView?=null
+    private var txtNextSeek: TextView? = null
+    private var txtPreviewSeek: TextView? = null
+    private var btnScale: ImageView? = null
+    private var imgFullOrExit: ImageView? = null
+    private var btnFullOrExit: LinearLayout? = null
 
     private lateinit var controllerMedia: LinearLayout
     private lateinit var btnOption: ImageView
@@ -80,27 +107,48 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        window.statusBarColor = ContextCompat.getColor(this, R.color.colorBlackGray)
+//        setHeightPlayerToWrap()
 //        val toolbar = playerView.findViewById<Toolbar>(R.id.toolbar_controller)
 //        setSupportActionBar(toolbar)
-        requestFullScreenIfLandscape()
+//        requestFullScreenIfLandscape()
 //        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 //        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_baseline_arrow_back_24)
         Log.d(TAG, "datamediaThatget $getDataLink")
 
-        btnScale=playerView.findViewById(R.id.btn_scale)
+//        btnScale=playerView.findViewById(R.id.btn_scale)
+        progressBar = playerView.findViewById(R.id.progress_bar)
+        btnPlay = playerView.findViewById(R.id.btn_play)
+        btnPause = playerView.findViewById(R.id.btn_pause)
+        layoutBtnControllerPlay=playerView.findViewById(R.id.layout_btn_controller_play)
         txtSeekTo = playerView.findViewById(R.id.txt_seekTo)
         controllerMedia = playerView.findViewById(R.id.container_control_media)
         containerController = playerView.findViewById(R.id.container_controller)
+        timeBar=playerView.findViewById(R.id.exo_progress)
         btnOption = playerView.findViewById(R.id.btn_option)
         layoutReplay = playerView.findViewById(R.id.layout_replay)
         layoutForward = playerView.findViewById(R.id.layout_forward)
+        btnFullOrExit = playerView.findViewById(R.id.btn_full_or_exit)
+        imgFullOrExit = playerView.findViewById(R.id.img_full_or_exit)
+        txtNextSeek = playerView.findViewById(R.id.next_seek)
+        txtPreviewSeek = playerView.findViewById(R.id.preview_seek)
 //        playerView.controllerHideOnTouch = false
 //        playerView.controllerShowTimeoutMs = 1000
+        val cm = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        cm.registerDefaultNetworkCallback(ConnectivityCallback())
+
+
+
+
         featureDoubleClick()
         initComponentClick()
+
+    }
+    private fun initComponentCallBackOfView(){
 
     }
 
@@ -108,26 +156,57 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
         btnOption.setOnClickListener {
             showActionsBottomSheet()
         }
-        btnScale!!.setOnClickListener {
-            when (indexAspectRatio) {
-                0 -> {
-                    indexAspectRatio+=1
-                    setAspectRatio(0)
-                }
-                1 -> {
-                    indexAspectRatio+=1
-                    setAspectRatio(1)
-                }
-                2 -> {
-                    indexAspectRatio+=1
-                    setAspectRatio(2)
-                }
-                3 ->{
-                    indexAspectRatio=0
-                    setAspectRatio(0)
-                }
-            }
+//        btnScale!!.setOnClickListener {
+//            when (indexAspectRatio) {
+//                0 -> {
+//                    indexAspectRatio+=1
+//                    setAspectRatio(0)
+//                }
+//                1 -> {
+//                    indexAspectRatio+=1
+//                    setAspectRatio(1)
+//                }
+//                2 -> {
+//                    indexAspectRatio+=1
+//                    setAspectRatio(2)
+//                }
+//                3 ->{
+//                    indexAspectRatio=0
+//                    setAspectRatio(0)
+//                }
+//            }
+//        }
+        btnFullOrExit!!.setOnClickListener {
+            setFullScreen()
         }
+        btnPlay!!.setOnClickListener {
+            startPlayer()
+            btnPlay!!.visibility = View.GONE
+            btnPause!!.visibility = View.VISIBLE
+
+        }
+        btnPause!!.setOnClickListener {
+            pausePlayer()
+            btnPlay!!.visibility = View.VISIBLE
+            btnPause!!.visibility = View.GONE
+
+        }
+
+        timeBar!!.addListener(object:TimeBar.OnScrubListener{
+
+            override fun onScrubMove(timeBar: TimeBar, position: Long) {
+                isClickTimeBar=true
+            }
+
+            override fun onScrubStart(timeBar: TimeBar, position: Long) {
+
+            }
+
+            override fun onScrubStop(timeBar: TimeBar, position: Long, canceled: Boolean) {
+
+            }
+
+        })
     }
 
 
@@ -167,7 +246,13 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                     pixelWidthHeightRatio
                 )
 //                txtShowCurrentResolution.text=height.toString()+"P"
-                Log.d(TAG, "initial $height $width")
+                if (!mRatioAlreadyCalculated && mVideoWidthHeightRatio !== width.toFloat() / height.toFloat()) {
+                    mVideoWidthHeightRatio = width.toFloat() / height * pixelWidthHeightRatio
+                    mRatioAlreadyCalculated = true
+
+                }
+
+                Log.d(TAG, "initial $pixelWidthHeightRatio $mVideoWidthHeightRatio")
             }
         })
     }
@@ -197,19 +282,21 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
             Log.d(TAG, "rotate true")
             hideSystemUi()
         } else {
+            showSystemUI()
+            Log.d(TAG, "rotate false")
             isPotrait = true
         }
 
     }
 
-    private fun hideSystemUi() {
-        playerView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LOW_PROFILE
-                or View.SYSTEM_UI_FLAG_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
-    }
+//    private fun hideSystemUi() {
+//        playerView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LOW_PROFILE
+//                or View.SYSTEM_UI_FLAG_FULLSCREEN
+//                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+//                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+//                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+//                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
+//    }
 
 
     override fun onClick(v: View?) {
@@ -233,74 +320,6 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
         player!!.seekTo(currentWindow, playbackPosition);
         player!!.prepare(MediaSourceBuilder().build(Uri.parse(getDataLink)), false, false)
         player!!.addListener(this)
-        player!!.addVideoListener(object : VideoListener {
-            override fun onVideoSizeChanged(
-                width: Int,
-                height: Int,
-                unappliedRotationDegrees: Int,
-                pixelWidthHeightRatio: Float
-            ) {
-                super.onVideoSizeChanged(
-                    width,
-                    height,
-                    unappliedRotationDegrees,
-                    pixelWidthHeightRatio
-                )
-//                txtShowCurrentResolution.text=height.toString()+"P"
-                Log.d(TAG, "height $width, $pixelWidthHeightRatio")
-            }
-        })
-        player!!.addAnalyticsListener(object : AnalyticsListener {
-            override fun onBandwidthEstimate(
-                eventTime: AnalyticsListener.EventTime?,
-                totalLoadTimeMs: Int,
-                totalBytesLoaded: Long,
-                bitrateEstimate: Long
-            ) {
-                super.onBandwidthEstimate(
-                    eventTime,
-                    totalLoadTimeMs,
-                    totalBytesLoaded,
-                    bitrateEstimate
-                )
-                Log.d(TAG, "bandwidth $eventTime ,$bitrateEstimate")
-            }
-
-            override fun onLoadingChanged(
-                eventTime: AnalyticsListener.EventTime?,
-                isLoading: Boolean
-            ) {
-                super.onLoadingChanged(eventTime, isLoading)
-                Log.d(TAG, "onLoading $eventTime ,$isLoading")
-            }
-
-            override fun onLoadCompleted(
-                eventTime: AnalyticsListener.EventTime?,
-                loadEventInfo: MediaSourceEventListener.LoadEventInfo?,
-                mediaLoadData: MediaSourceEventListener.MediaLoadData?
-            ) {
-                super.onLoadCompleted(eventTime, loadEventInfo, mediaLoadData)
-                Log.d(TAG, "onLoadingChange ${loadEventInfo!!.responseHeaders}")
-            }
-
-            override fun onVideoSizeChanged(
-                eventTime: AnalyticsListener.EventTime?,
-                width: Int,
-                height: Int,
-                unappliedRotationDegrees: Int,
-                pixelWidthHeightRatio: Float
-            ) {
-                super.onVideoSizeChanged(
-                    eventTime,
-                    width,
-                    height,
-                    unappliedRotationDegrees,
-                    pixelWidthHeightRatio
-                )
-                Log.d(TAG, "onVideoSizeChanged ${eventTime!!.mediaPeriodId!!.isAd}")
-            }
-        })
-        Log.d(TAG, "setQuality $")
     }
 
 
@@ -320,7 +339,9 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                     initializePlayer()
                     currentIndexResolution = 0
                 }
-                hideSystemUi()
+                if (isFullscreen) {
+                    hideSystemUi()
+                }
             }
 
             override fun call1080() {
@@ -329,7 +350,9 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                     currentIndexResolution = 1
 
                 }
-                hideSystemUi()
+                if (isFullscreen) {
+                    hideSystemUi()
+                }
             }
 
             override fun call720() {
@@ -337,7 +360,9 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                     setQualityMedia(MI_BITRATE)
                     currentIndexResolution = 2
                 }
-                hideSystemUi()
+                if (isFullscreen) {
+                    hideSystemUi()
+                }
             }
 
             override fun call480() {
@@ -345,7 +370,9 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                     setQualityMedia(LO_BITRATE)
                     currentIndexResolution = 3
                 }
-                hideSystemUi()
+                if (isFullscreen) {
+                    hideSystemUi()
+                }
             }
 
             override fun call360() {
@@ -353,11 +380,85 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                     setQualityMedia(LOWEST_BITRATE)
                     currentIndexResolution = 4
                 }
-                hideSystemUi()
+                if (isFullscreen) {
+                    hideSystemUi()
+                }
+            }
+
+            override fun onDismiss() {
+                if (isFullscreen) {
+                    hideSystemUi()
+                }
             }
 
         })
         bottomSheetChooseQualitiy.show(this.supportFragmentManager, "")
+    }
+
+    private fun showActionSetPlayBackSpeed(checkTypeSpeed: Int) {
+        val choosePlayBackSpeed = ChoosePlayBackSpeed.getInstance()
+        choosePlayBackSpeed.setValueForCheckVisible(checkTypeSpeed)
+        choosePlayBackSpeed.registerCallback(object :
+            ChoosePlayBackSpeed.callBackChoosePlayBackSpeed {
+            override fun speed0() {
+                playBackSpeed(0.25f)
+                currentIndexPlayBackSpeed = 0
+                hideSystemUi()
+            }
+
+            override fun speed1() {
+                playBackSpeed(0.5f)
+                currentIndexPlayBackSpeed = 1
+                hideSystemUi()
+            }
+
+            override fun speed2() {
+                playBackSpeed(0.75f)
+                currentIndexPlayBackSpeed = 2
+                hideSystemUi()
+            }
+
+            override fun speed3() {
+                playBackSpeed(1f)
+                currentIndexPlayBackSpeed = 3
+                hideSystemUi()
+            }
+
+            override fun speed4() {
+                playBackSpeed(1.25f)
+                currentIndexPlayBackSpeed = 4
+                hideSystemUi()
+            }
+
+            override fun speed5() {
+                playBackSpeed(1.5f)
+                currentIndexPlayBackSpeed = 5
+                hideSystemUi()
+            }
+
+            override fun speed6() {
+                playBackSpeed(1.75f)
+                currentIndexPlayBackSpeed = 6
+                hideSystemUi()
+            }
+
+            override fun speed7() {
+                playBackSpeed(2f)
+                currentIndexPlayBackSpeed = 7
+                hideSystemUi()
+            }
+
+            override fun onDismiss() {
+                hideSystemUi()
+            }
+
+        })
+        choosePlayBackSpeed.show(this.supportFragmentManager, "")
+    }
+
+    private fun playBackSpeed(speed: Float) {
+        val params = PlaybackParameters(speed)
+        player!!.playbackParameters = params
     }
 
     private fun showActionsBottomSheet() {
@@ -376,6 +477,12 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                     "Report" -> {
 
                     }
+                    "Captions" -> {
+
+                    }
+                    "PlayBack speed" -> {
+                        showActionSetPlayBackSpeed(currentIndexPlayBackSpeed)
+                    }
                 }
             }
         )
@@ -387,7 +494,15 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
         return ArrayList<Option>().apply {
             add(0, Option().setIconId(R.drawable.ic_baseline_flag_24).setTitle("Report"))
             add(1, Option().setIconId(R.drawable.ic_baseline_settings_24).setTitle("Quality"))
-            add(2, Option().setIconId(R.drawable.ic_baseline_help_24).setTitle("Help & feedback"))
+            add(
+                2,
+                Option().setIconId(R.drawable.ic_baseline_closed_caption_24).setTitle("Captions")
+            )
+            add(
+                3,
+                Option().setIconId(R.drawable.ic_baseline_av_timer_24).setTitle("PlayBack speed")
+            )
+            add(4, Option().setIconId(R.drawable.ic_baseline_help_24).setTitle("Help & feedback"))
         }
 
     }
@@ -401,16 +516,75 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                 getString(R.string.fit)
             }
 
-            1-> {
+            1 -> {
 
                 playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
                 getString(R.string.stretch)
             }
-            2-> {
+            2 -> {
                 playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT
                 playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
                 getString(R.string.original)
             }
+        }
+    }
+
+    private fun setHeightPlayerToMatchParent() {
+        val params = playerView.layoutParams
+        params.width = ViewGroup.LayoutParams.MATCH_PARENT
+        params.height = ViewGroup.LayoutParams.MATCH_PARENT
+        playerView.layoutParams = params
+    }
+
+    private fun setFullScreen() {
+        if (isFullscreen) {
+            showSystemUI()
+
+            imgFullOrExit!!.setImageDrawable(
+                ContextCompat.getDrawable(
+                    this,
+                    R.drawable.exo_controls_fullscreen_enter
+                )
+            )
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            if (supportActionBar != null) {
+                supportActionBar!!.show()
+            }
+
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            val params: ViewGroup.LayoutParams = playerView.layoutParams as ViewGroup.LayoutParams
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT
+            params.height = (250 * applicationContext.resources.displayMetrics.density).toInt()
+            playerView.layoutParams = params
+            isFullscreen = false
+            Handler().postDelayed({
+                this@MediaViewer.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+            }, 2000)
+        } else {
+            hideSystemUi()
+            imgFullOrExit!!.setImageDrawable(
+                ContextCompat.getDrawable(
+                    this,
+                    R.drawable.exo_controls_fullscreen_exit
+                )
+            )
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
+            if (supportActionBar != null) {
+                supportActionBar!!.hide()
+            }
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            val params: ViewGroup.LayoutParams =
+                playerView.layoutParams as ViewGroup.LayoutParams
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT
+            params.height = ViewGroup.LayoutParams.MATCH_PARENT
+            playerView.layoutParams = params
+
+            isFullscreen = true
+            Handler().postDelayed({
+                this@MediaViewer.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+            }, 2000)
         }
     }
 
@@ -428,11 +602,8 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     override fun onLoadingChanged(isLoading: Boolean) {
         super.onLoadingChanged(isLoading)
-        if (isLoading) {
-            progress_bar.visibility = View.VISIBLE
-        } else {
-            progress_bar.visibility = View.GONE
-        }
+        Log.d(TAG,"isloading $isLoading")
+
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {
@@ -441,9 +612,55 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
         super.onPlayerStateChanged(playWhenReady, playbackState)
-        Log.d(TAG, "playstate $playWhenReady $playbackState")
+
         if (playbackState == Player.STATE_READY) {
-            progress_bar.visibility = View.GONE
+            Log.d(TAG, "playstate ready $isBuffering $isClickTimeBar")
+            progressBar!!.stop()
+            layoutBtnControllerPlay!!.animate().alpha(1f)
+            if (playWhenReady){
+                showBtnPause()
+                playerState=true
+            }else{
+                playerState=false
+                showBtnPlay()
+            }
+            if (isBuffering){
+                if (!isClickTimeBar){
+                    pausePlayer()
+
+                    isBuffering=false
+                    isClickTimeBar=true
+                }
+            }
+
+
+        } else if (playbackState == Player.STATE_BUFFERING) {
+            Log.d(TAG, "playstate buffer")
+            showBtnPlay()
+            isBuffering=true
+            progressBar!!.start()
+//            pausePlayer()
+//            showBtnPlay()
+            layoutBtnControllerPlay!!.animate().alpha(0f)
+//            layoutBtnControllerPlay!!.visibility=View.INVISIBLE
+
+
+
+
+        } else if (playbackState == Player.STATE_IDLE) {
+            Log.d(TAG, "playstate idle")
+//            layoutBtnControllerPlay!!.visibility=View.VISIBLE
+            progressBar!!.start()
+
+
+
+
+
+        } else if (playbackState == Player.STATE_ENDED) {
+            Log.d(TAG, "playstate end")
+//            layoutBtnControllerPlay!!.visibility=View.VISIBLE
+            progressBar!!.stop()
+
         }
 
     }
@@ -458,7 +675,7 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     override fun onSeekProcessed() {
         super.onSeekProcessed()
-        progress_bar.visibility = View.VISIBLE
+//        progress_bar.visibility = View.VISIBLE
     }
 
     override fun onBackPressed() {
@@ -472,7 +689,7 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     override fun onStart() {
         super.onStart()
-        hideSystemUi()
+//        hideSystemUi()
 //        requestFullScreenIfLandscape()
         if (Util.SDK_INT >= 24) {
             initializePlayer();
@@ -493,8 +710,8 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     override fun onResume() {
         super.onResume()
-        hideSystemUi()
-        requestFullScreenIfLandscape()
+//        hideSystemUi()
+//        requestFullScreenIfLandscape()
         if ((Util.SDK_INT < 24 || player == null)) {
             initializePlayer()
             Log.d("mainactivity", "onResume $currentWindow $playbackPosition")
@@ -514,28 +731,55 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-//        val orientation = newConfig.orientation
-//        if (orientation == Configuration.ORIENTATION_PORTRAIT){
-//            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-//        }
-//        else if (orientation == Configuration.ORIENTATION_LANDSCAPE){
-//
-//        }
+        val orientation = newConfig.orientation
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            isFullscreen = false
+
+            Log.d(TAG, "potrait")
+            imgFullOrExit!!.setImageDrawable(
+                ContextCompat.getDrawable(
+                    this,
+                    R.drawable.exo_controls_fullscreen_enter
+                )
+            )
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            if (supportActionBar != null) {
+                supportActionBar!!.show()
+            }
+            showSystemUI()
+//            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            val params: ViewGroup.LayoutParams = playerView.layoutParams as ViewGroup.LayoutParams
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT
+            params.height = (250 * applicationContext.resources.displayMetrics.density).toInt()
+            playerView.layoutParams = params
+        } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            Log.d(TAG, "landscape")
+            hideSystemUi()
+            isFullscreen = true
+            imgFullOrExit!!.setImageDrawable(
+                ContextCompat.getDrawable(
+                    this,
+                    R.drawable.exo_controls_fullscreen_exit
+                )
+            )
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
+            if (supportActionBar != null) {
+                supportActionBar!!.hide()
+            }
+//            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            val params: ViewGroup.LayoutParams = playerView.layoutParams as ViewGroup.LayoutParams
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT
+            params.height = ViewGroup.LayoutParams.MATCH_PARENT
+            playerView.layoutParams = params
+        }
 
     }
 
     private fun featureDoubleClick() {
-        var isHide = false
         containerController!!.setOnClickListener {
 
-//                if (isHide==true){
-//                    playerView.showController()
-//                    isHide=false
-//                }else{
-//                    playerView.hideController()
-//                    isHide=true
-//                }
             if (playerView.isControllerVisible) {
                 playerView.hideController()
             } else {
@@ -556,15 +800,13 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
             if (isDoubleCliked) {
                 //Actions when double Clicked
-                Log.d(TAG, "forward")
-                val nextPosition = player?.currentPosition?.plus(30000)
+                val nextPosition = player?.currentPosition?.plus(10000)
                 player!!.seekTo(nextPosition!!)
-                txtSeekTo!!.text = "Forward 30s"
-                txtSeekTo!!.animate().alpha(1f)
+                txtNextSeek!!.text = "10 Seconds"
+                txtNextSeek!!.animate().alpha(1f)
                 Handler().postDelayed({
-                    txtSeekTo!!.animate().alpha(0.0f)
+                    txtNextSeek!!.animate().alpha(0.0f)
                 }, 1000)
-                Log.d(TAG, "nextposition ${player!!.currentPosition}")
                 isDoubleCliked = false;
                 //remove callbacks for Handlers
                 handler.removeCallbacks(r);
@@ -576,12 +818,11 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
         layoutReplay!!.setOnClickListener {
             if (isDoubleCliked) {
                 //Actions when double Clicked
-                Log.d(TAG, "forward")
                 val replayPosition = player?.currentPosition?.minus(10000)
-                txtSeekTo!!.text = "Replay 10s"
-                txtSeekTo!!.animate().alpha(1f)
+                txtPreviewSeek!!.text = "10 Seconds"
+                txtPreviewSeek!!.animate().alpha(1f)
                 Handler().postDelayed({
-                    txtSeekTo!!.animate().alpha(0.0f)
+                    txtPreviewSeek!!.animate().alpha(0.0f)
                 }, 1000)
                 player!!.seekTo(replayPosition!!)
                 isDoubleCliked = false;
@@ -591,6 +832,81 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
                 isDoubleCliked = true;
                 handler.postDelayed(r, 500);
             }
+        }
+    }
+
+
+    private fun hideSystemUi() {
+        val decorView: View = this.getWindow().getDecorView()
+        val uiOptions = decorView.systemUiVisibility
+        var newUiOptions = uiOptions
+        newUiOptions = newUiOptions or View.SYSTEM_UI_FLAG_LOW_PROFILE
+        newUiOptions = newUiOptions or View.SYSTEM_UI_FLAG_FULLSCREEN
+        newUiOptions = newUiOptions or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        newUiOptions = newUiOptions or View.SYSTEM_UI_FLAG_IMMERSIVE
+        newUiOptions = newUiOptions or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        decorView.systemUiVisibility = newUiOptions
+    }
+
+    private fun showSystemUI() {
+        val decorView: View = this.getWindow().getDecorView()
+        val uiOptions = decorView.systemUiVisibility
+        var newUiOptions = uiOptions
+        newUiOptions = newUiOptions and View.SYSTEM_UI_FLAG_LOW_PROFILE.inv()
+        newUiOptions = newUiOptions and View.SYSTEM_UI_FLAG_FULLSCREEN.inv()
+        newUiOptions = newUiOptions and View.SYSTEM_UI_FLAG_HIDE_NAVIGATION.inv()
+        newUiOptions = newUiOptions and View.SYSTEM_UI_FLAG_IMMERSIVE.inv()
+        newUiOptions = newUiOptions and View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY.inv()
+        decorView.systemUiVisibility = newUiOptions
+    }
+
+    private fun hideControllerMedia() {
+        btnPlay!!.visibility = View.GONE
+        btnPause!!.visibility = View.GONE
+    }
+
+    private fun pausePlayer() {
+        Log.d(TAG,"player pause")
+        player!!.playWhenReady=false
+        player!!.playbackState;
+    }
+
+    private fun startPlayer() {
+        player!!.playWhenReady = true
+        player!!.playbackState;
+    }
+
+    private fun showBtnPlay() {
+        btnPlay!!.visibility = View.VISIBLE
+        btnPause!!.visibility = View.GONE
+    }
+
+    private fun showBtnPause() {
+        btnPlay!!.visibility = View.GONE
+        btnPause!!.visibility = View.VISIBLE
+    }
+
+    private fun detectedNetWork(): Boolean {
+        val cm = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
+        val isConnected: Boolean = activeNetwork?.isConnectedOrConnecting == true
+        return isConnected
+    }
+
+    inner class ConnectivityCallback : ConnectivityManager.NetworkCallback() {
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            val connected = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            connectivityNetwork=connected
+            Log.d(TAG,"connected")
+
+
+
+        }
+
+        override fun onLost(network: Network) {
+            Log.d(TAG,"lost")
+            connectivityNetwork=false
+
         }
     }
 }

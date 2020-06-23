@@ -4,125 +4,38 @@
     android:id="@+id/customPlayBackControlView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_gray_radius_top_bottom"
+    android:background="@color/colorGrayTransparent"
     android:orientation="vertical">
 
-    <LinearLayout
+    <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar_controller"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
+        android:layout_height="?android:attr/actionBarSize"
+        android:visibility="visible">
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="10dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/image_profile"
-                android:layout_marginHorizontal="10dp"
-                android:src="@drawable/picture"
-                android:layout_width="40dp"
-                android:layout_height="40dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Black Pink"
-                    android:textColor="@color/colorWhite" />
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="50mn"
-                        android:textColor="#D8D8D8"
-                        android:textSize="10sp" />
-
-                    <LinearLayout
-                        android:id="@+id/choose_type_privacy"
-                        android:layout_width="wrap_content"
-                        android:layout_height="18dp"
-                        android:layout_marginStart="5dp"
-                        android:background="@drawable/border_radius_white"
-                        android:clickable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:id="@+id/title_privacy"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:gravity="center_horizontal"
-                            android:text="Public"
-                            android:textColor="@color/colorWhite"
-                            android:textSize="10sp" />
-
-                        <ImageView
-                            android:layout_width="6dp"
-                            android:layout_height="6dp"
-                            android:layout_marginStart="5dp"
-                            android:layout_marginEnd="5dp"
-                            android:src="@drawable/ic_drop_down_arrow" />
-
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
-
-            <ImageButton
-                android:id="@+id/btn_back"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="10dp"
-                android:background="@null"
-                android:src="@drawable/ic_back" />
-
+                android:src="@drawable/ic_baseline_arrow_back_24"/>
+            <TextView
+                android:layout_weight="1"
+                android:textColor="@color/colorWhite"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content" />
             <ImageView
                 android:id="@+id/btn_option"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="5dp"
+                android:layout_marginHorizontal="10dp"
                 android:src="@drawable/ic_baseline_more_vert_24"
-                android:visibility="gone" />
-
+                android:visibility="visible" />
         </LinearLayout>
-    </LinearLayout>
 
+    </androidx.appcompat.widget.Toolbar>
 
-    <LinearLayout
-        android:gravity="center"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_centerInParent="true"
-        android:background="@drawable/bg_circle_gray">
-
-        <ImageButton
-            android:id="@id/exo_play"
-            style="@style/ExoMediaButton.Play"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@null" />
-
-        <ImageButton
-            android:id="@id/exo_pause"
-            style="@style/ExoMediaButton.Pause"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@null" />
-    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/container_controller"
@@ -130,35 +43,24 @@
         android:layout_height="match_parent"
         android:layout_centerInParent="true"
         android:layout_marginVertical="50dp"
-        android:visibility="gone">
+        android:visibility="visible">
 
         <LinearLayout
             android:id="@+id/layout_replay"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:gravity="end">
-
-            <ImageButton
-                android:id="@id/exo_rew"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_gravity="center_vertical"
-                android:background="@null"
-                android:src="@drawable/ic_baseline_replay_10_24" />
-
-            <LinearLayout
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/preview_seek"
+                android:layout_marginTop="60dp"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:text=""
+                android:textColor="@color/colorWhite" />
 
-                <TextView
-                    android:id="@+id/txt_seekTo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:animateLayoutChanges="true"
-                    android:text=""
-                    android:textColor="@color/colorWhite" />
-            </LinearLayout>
         </LinearLayout>
 
         <RelativeLayout
@@ -167,26 +69,22 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
+
+
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true">
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:gravity="center_horizontal">
 
-                <ImageButton
-                    android:id="@id/exo_play"
-                    style="@style/ExoMediaButton.Play"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_gravity="center_vertical"
-                    android:layout_weight="1" />
-
-                <ImageButton
-                    android:id="@id/exo_pause"
-                    style="@style/ExoMediaButton.Pause"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_gravity="center_vertical"
-                    android:layout_weight="1" />
+                <TextView
+                    android:id="@+id/txt_seekTo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:text=""
+                    android:textColor="@color/colorWhite" />
             </LinearLayout>
 
         </RelativeLayout>
@@ -198,25 +96,28 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:gravity="start">
+            android:gravity="center"
+            android:orientation="vertical">
 
-            <ImageButton
-                android:id="@id/exo_ffwd"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_gravity="center_vertical"
-                android:background="@null"
-                android:src="@drawable/ic_baseline_forward_30_24" />
+            <TextView
+                android:id="@+id/next_seek"
+                android:layout_marginTop="60dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:text=""
+                android:textColor="@color/colorWhite" />
+
         </LinearLayout>
 
 
     </LinearLayout>
 
     <LinearLayout
-        android:layout_marginBottom="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:layout_marginBottom="10dp"
         android:orientation="vertical">
 
         <LinearLayout
@@ -252,23 +153,30 @@
                     app:bar_height="1dp"
                     app:played_ad_marker_color="@color/colorWhite"
                     app:played_color="@color/colorOrange"
+                    app:ad_marker_color="@color/colorWhiteTransparent"
                     app:scrubber_dragged_size="24dp"
                     app:scrubber_enabled_size="12dp"
                     app:unplayed_color="@color/colorWhite" />
 
                 <TextView
+                    android:id="@id/exo_duration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="LIVE"
-                    android:textColor="@color/colorWhite" />
-
+                    android:layout_marginStart="10dp"
+                    android:includeFontPadding="false"
+                    android:text="6:00"
+                    android:textColor="@color/colorWhite"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
                 <LinearLayout
-                    android:gravity="center"
+                    android:id="@+id/btn_full_or_exit"
                     android:layout_width="45dp"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:gravity="center">
+
                     <ImageView
-                        android:id="@+id/btn_scale"
+                        android:id="@+id/img_full_or_exit"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:background="@null"
@@ -282,7 +190,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <EditText
                 android:layout_width="0dp"
@@ -311,5 +220,28 @@
 
         </LinearLayout>
 
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/layout_btn_controller_play"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true">
+
+        <ImageView
+            android:id="@+id/btn_play"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            style="@style/ExoMediaButton.Play" />
+
+        <ImageView
+            android:id="@+id/btn_pause"
+            android:visibility="gone"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            style="@style/ExoMediaButton.Pause"/>
     </LinearLayout>
 </RelativeLayout>
