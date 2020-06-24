@@ -1,6 +1,7 @@
 package com.sey.mediaview
 
 import android.net.Uri
+import android.util.Log
 import com.google.android.exoplayer2.source.DynamicConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
@@ -18,6 +19,7 @@ class MediaSourceBuilder {
         val lastPath = uri.lastPathSegment?:""
 
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory(userAgent)
+        Log.d("mediaplayer","${defaultHttpDataSourceFactory.defaultRequestProperties.snapshot}")
 
         if(lastPath.contains(PlayerConstants.FORMAT_MP3) || lastPath.contains(PlayerConstants.FORMAT_MP4)){
 
