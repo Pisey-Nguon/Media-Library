@@ -3,6 +3,8 @@ package com.sey.mediaview
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.content.res.Resources
+import android.graphics.Color
 import android.net.*
 import android.os.Build
 import android.os.Bundle
@@ -31,6 +33,7 @@ import com.google.android.exoplayer2.trackselection.TrackSelection
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.DefaultTimeBar
+import com.google.android.exoplayer2.ui.PlayerControlView
 import com.google.android.exoplayer2.ui.TimeBar
 import com.google.android.exoplayer2.upstream.BandwidthMeter
 import com.google.android.exoplayer2.upstream.DataSource
@@ -39,17 +42,19 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import com.tubitv.ui.TubiLoadingView
 import kotlinx.android.synthetic.main.activity_main.*
+import java.util.*
+import kotlin.collections.ArrayList
 
-class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListener {
+class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListener{
     companion object {
         const val TAG = "mainactivity"
         private var getDataLink = ""
     }
 
 
-    private var playerState=false
-    private var connectivityNetwork=false
-    private var isClickTimeBar=false
+    private var playerState = false
+    private var connectivityNetwork = false
+    private var isClickTimeBar = false
     private var isBuffering = false
     private var isFullscreen = false
     private var isDoubleCliked = false
@@ -59,9 +64,10 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
     private var MI_BITRATE: Long = 2800000
     private var LO_BITRATE: Long = 1400000
     private var LOWEST_BITRATE: Long = 1000000
-    private var durationMedia:Long=0
-    private var durationSet:Boolean=false
-    private var maxBandwidthMeter:BandwidthMeter?=null
+    private var durationMedia: Long = 0
+    private var durationSet: Boolean = false
+    private var mPlayerControlView:PlayerControlView?=null
+    private var maxBandwidthMeter: BandwidthMeter? = null
     private var defaultBandwidthMeter: DefaultBandwidthMeter? = null
     private var adaptiveTrackSelection: TrackSelection.Factory? = null
     private var playWhenReady = true
@@ -82,12 +88,14 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
     private var progressBar: TubiLoadingView? = null
     private var btnPlay: ImageView? = null
     private var btnPause: ImageView? = null
-    private var btnReplay:ImageView?=null
-    private var layoutBtnControllerPlay:LinearLayout?=null
+    private var btnReplay: ImageView? = null
+    private var layoutBtnControllerPlay: LinearLayout? = null
     private var layoutReplay: LinearLayout? = null
     private var layoutForward: LinearLayout? = null
     private var containerController: LinearLayout? = null
-    private var defaultTimeBar:DefaultTimeBar?=null
+    private var defaultTimeBar: DefaultTimeBar? = null
+    private var txtTimeProgress:TextView?=null
+    private var txtTimeDuration:TextView?=null
     private var txtSeekTo: TextView? = null
     private var txtNextSeek: TextView? = null
     private var txtPreviewSeek: TextView? = null
@@ -109,24 +117,20 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         window.statusBarColor = ContextCompat.getColor(this, R.color.colorBlackGray)
-//        setHeightPlayerToWrap()
-//        val toolbar = playerView.findViewById<Toolbar>(R.id.toolbar_controller)
-//        setSupportActionBar(toolbar)
-//        requestFullScreenIfLandscape()
-//        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-//        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_baseline_arrow_back_24)
         Log.d(TAG, "datamediaThatget $getDataLink")
+        txtTimeProgress=playerView.findViewById(R.id.exo_position)
+        txtTimeDuration=playerView.findViewById(R.id.exo_duration)
 
 //        btnScale=playerView.findViewById(R.id.btn_scale)
         progressBar = playerView.findViewById(R.id.progress_bar)
         btnPlay = playerView.findViewById(R.id.btn_play)
         btnPause = playerView.findViewById(R.id.btn_pause)
-        btnReplay=playerView.findViewById(R.id.btn_replay)
-        layoutBtnControllerPlay=playerView.findViewById(R.id.layout_btn_controller_play)
+        btnReplay = playerView.findViewById(R.id.btn_replay)
+        layoutBtnControllerPlay = playerView.findViewById(R.id.layout_btn_controller_play)
         txtSeekTo = playerView.findViewById(R.id.txt_seekTo)
         controllerMedia = playerView.findViewById(R.id.container_control_media)
         containerController = playerView.findViewById(R.id.container_controller)
-        defaultTimeBar=playerView.findViewById(R.id.exo_progress)
+        defaultTimeBar = playerView.findViewById(R.id.exo_progress)
         btnOption = playerView.findViewById(R.id.btn_option)
         layoutReplay = playerView.findViewById(R.id.layout_replay)
         layoutForward = playerView.findViewById(R.id.layout_forward)
@@ -144,9 +148,11 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
         featureDoubleClick()
         initComponentClick()
+        initComponentCallBackOfView()
 
     }
-    private fun initComponentCallBackOfView(){
+
+    private fun initComponentCallBackOfView() {
 
     }
 
@@ -190,10 +196,10 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
         }
 
-        defaultTimeBar!!.addListener(object:TimeBar.OnScrubListener{
+        defaultTimeBar!!.addListener(object : TimeBar.OnScrubListener {
 
             override fun onScrubMove(timeBar: TimeBar, position: Long) {
-                isClickTimeBar=true
+                isClickTimeBar = true
             }
 
             override fun onScrubStart(timeBar: TimeBar, position: Long) {
@@ -201,10 +207,7 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
             }
 
             override fun onScrubStop(timeBar: TimeBar, position: Long, canceled: Boolean) {
-                if (position==durationMedia){
-                    pausePlayer()
-                    showBtnReplay()
-                }
+
             }
 
         })
@@ -212,6 +215,15 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
         btnReplay!!.setOnClickListener {
             initializePlayer()
         }
+        txtTimeProgress!!.addOnLayoutChangeListener(object :View.OnLayoutChangeListener{
+            override fun onLayoutChange(v: View?, left: Int, top: Int, right: Int, bottom: Int, oldLeft: Int, oldTop: Int, oldRight: Int, oldBottom: Int) {
+                if (txtTimeProgress!!.text == txtTimeDuration!!.text) {
+                    pausePlayer()
+                    showBtnReplay()
+                }
+            }
+
+        })
     }
 
 
@@ -287,7 +299,7 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     private fun setQualityMedia(bitrate: Long) {
         releasePlayer()
-        defaultBandwidthMeter = DefaultBandwidthMeter.Builder()
+        defaultBandwidthMeter = DefaultBandwidthMeter.Builder(this)
             .setInitialBitrateEstimate(bitrate)
             .build()
         adaptiveTrackSelection = AdaptiveTrackSelection.Factory(defaultBandwidthMeter)
@@ -602,7 +614,7 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     override fun onLoadingChanged(isLoading: Boolean) {
         super.onLoadingChanged(isLoading)
-        Log.d(TAG,"isloading $isLoading")
+        Log.d(TAG, "isloading $isLoading")
 
     }
 
@@ -615,48 +627,31 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
             Log.d(TAG, "playstate ready $isBuffering $isClickTimeBar")
             progressBar!!.stop()
             layoutBtnControllerPlay!!.animate().alpha(1f)
-            if (playWhenReady){
+            if (playWhenReady) {
                 showBtnPause()
-                playerState=true
-            }else{
-                playerState=false
+                playerState = true
+            } else {
+                playerState = false
                 showBtnPlay()
             }
-//            if (isBuffering){
-//                if (!isClickTimeBar){
-//                    pausePlayer()
-//
-//                    isBuffering=false
-//                    isClickTimeBar=true
-//                }
-//            }
 
 
         } else if (playbackState == Player.STATE_BUFFERING) {
             Log.d(TAG, "playstate buffer")
+            startPlayer()
             showBtnPlay()
-            isBuffering=true
+            isBuffering = true
             progressBar!!.start()
-//            pausePlayer()
-//            showBtnPlay()
             layoutBtnControllerPlay!!.animate().alpha(0f)
-//            layoutBtnControllerPlay!!.visibility=View.INVISIBLE
-
-
-
 
         } else if (playbackState == Player.STATE_IDLE) {
             Log.d(TAG, "playstate idle")
-//            layoutBtnControllerPlay!!.visibility=View.VISIBLE
+            showBtnPlay()
             progressBar!!.start()
-
-
-
 
 
         } else if (playbackState == Player.STATE_ENDED) {
             Log.d(TAG, "playstate end")
-//            layoutBtnControllerPlay!!.visibility=View.VISIBLE
             showBtnReplay()
             progressBar!!.stop()
 
@@ -671,7 +666,7 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
 
     override fun onPlayerError(error: ExoPlaybackException?) {
         super.onPlayerError(error)
-        Log.d(TAG,"play error $error")
+        Log.d(TAG, "play error $error")
     }
 
     override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -871,8 +866,8 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
     }
 
     private fun pausePlayer() {
-        Log.d(TAG,"player pause")
-        player!!.playWhenReady=false
+        Log.d(TAG, "player pause")
+        player!!.playWhenReady = false
         player!!.playbackState;
     }
 
@@ -884,19 +879,19 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
     private fun showBtnPlay() {
         btnPlay!!.visibility = View.VISIBLE
         btnPause!!.visibility = View.GONE
-        btnReplay!!.visibility=View.GONE
+        btnReplay!!.visibility = View.GONE
     }
 
     private fun showBtnPause() {
-        btnReplay!!.visibility=View.GONE
+        btnReplay!!.visibility = View.GONE
         btnPlay!!.visibility = View.GONE
         btnPause!!.visibility = View.VISIBLE
     }
 
-    private fun showBtnReplay(){
+    private fun showBtnReplay() {
         btnPlay!!.visibility = View.GONE
         btnPause!!.visibility = View.GONE
-        btnReplay!!.visibility=View.VISIBLE
+        btnReplay!!.visibility = View.VISIBLE
     }
 
     private fun detectedNetWork(): Boolean {
@@ -909,16 +904,15 @@ class MediaViewer : AppCompatActivity(), View.OnClickListener, Player.EventListe
     inner class ConnectivityCallback : ConnectivityManager.NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
             val connected = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            connectivityNetwork=connected
-            Log.d(TAG,"connected")
-
+            connectivityNetwork = connected
+            Log.d(TAG, "connected")
 
 
         }
 
         override fun onLost(network: Network) {
-            Log.d(TAG,"lost")
-            connectivityNetwork=false
+            Log.d(TAG, "lost")
+            connectivityNetwork = false
 
         }
     }

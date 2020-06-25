@@ -12,7 +12,7 @@ class FirstActivity : AppCompatActivity() {
         setContentView(R.layout.activity_first)
         click_me.setOnClickListener {
             val mediaViewer=MediaViewer()
-            mediaViewer.setUrl(getString(R.string.video_mp4))
+            mediaViewer.setUrl(getString(R.string.link_media))
             val intent=Intent(this,mediaViewer::class.java)
             startActivity(intent)
         }
