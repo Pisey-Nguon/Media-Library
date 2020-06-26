@@ -140,7 +140,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:includeFontPadding="false"
-                    android:text="6:00"
+                    android:text="0:00"
                     android:textColor="@color/colorWhite"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -164,7 +164,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:includeFontPadding="false"
-                    android:text="6:00"
+                    android:text="--:--"
                     android:textColor="@color/colorWhite"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -221,7 +221,7 @@
         </LinearLayout>
 
     </LinearLayout>
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/layout_btn_controller_play"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -231,8 +231,7 @@
             android:id="@+id/btn_play"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_gravity="center_vertical"
-            android:layout_weight="1"
+            android:layout_centerInParent="true"
             style="@style/ExoMediaButton.Play" />
 
         <ImageView
@@ -240,14 +239,14 @@
             android:visibility="gone"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_gravity="center_vertical"
-            android:layout_weight="1"
+            android:layout_centerInParent="true"
             style="@style/ExoMediaButton.Pause"/>
         <ImageView
             android:id="@+id/btn_replay"
             android:visibility="gone"
             android:layout_width="50dp"
             android:layout_height="50dp"
+            android:layout_centerInParent="true"
             android:src="@drawable/ic_baseline_replay_24"/>
-    </LinearLayout>
+    </RelativeLayout>
 </RelativeLayout>
